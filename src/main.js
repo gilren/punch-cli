@@ -1,26 +1,13 @@
 const axios = require('axios');
 const cio = require('cheerio-without-node-native');
-const path = require("path");
 const dotenv = require('dotenv').config();
 
-// [\n\r]
-// (?<![\w\d])Cagoule sur le jnoun, c'pas du Michaël Youn(?![\w\d])([\n\r])
-export const getLyrics = async (options) => {
-  // console.log(process.env)
-  // options = {
-  //   ...options,
-  //   targetDirectory: options.targetDirectory || process.cwd(),
-  // };
-
-  const url = "https://genius.com/Booba-comme-les-autres-lyrics";
-
-  const string = "Cagoule sur le jnoun, c'pas du Michaël Youn";
-
+export const getPunch = async (options) => {
+  const url = options.url;
+  const regex =  new RegExp(removeAccentFromString(options.query), 'i');
 
   try {
-    let {
-      data
-    } = await axios.get(url);
+    let { data } = await axios.get(url);
     const $ = cio.load(data);
     let lyrics = $('div[class="lyrics"]').text().trim();
     if (!lyrics) {
@@ -35,54 +22,43 @@ export const getLyrics = async (options) => {
       })
     }
     if (!lyrics) return null;
-    console.log(    lyrics.search(string))
-    // const indexString =
 
-    return lyrics.trim();
+    const lyricsArr = lyrics.split('\n');
+    let returns = []
+    lyricsArr.forEach((item) => {
+      const itemCP = removeAccentFromString(item)
+      if (itemCP.search(regex) !== -1) {
+        returns.push(item)
+      }
+    });
+
+    return returns.length > 0 ? returns : "Nothing found";
   } catch (e) {
     throw e;
   }
-
-
-
-
-
 }
 
-
-
-export const findSong = async (artist, title) => {
-
+export const findSong = async (artist, search) => {
   try {
     const baseUrl = "https://api.genius.com/search?q="
-    let query = `${artist} ${title}`
+    let query = `${artist} ${search}`
     let url = `${baseUrl}${encodeURI(query)}`
     const headers = {
       Authorization: 'Bearer ' + process.env.CLIENT_ACCESS_TOKEN
     };
 
-    let {
-      data
-    } = await axios.get(url, {
-      headers
-    })
+    let { data } = await axios.get(url, { headers })
     if (data.response.hits.length === 0) return null;
     const results = data.response.hits.map((val) => {
-      const {
-        title,
-        id,
-        url,
-        primary_artist
-      } = val.result;
-      return {
-        id,
-        title: title + ' - ' + primary_artist.name,
-        url
-      };
+      const { title, id, url, primary_artist } = val.result;
+      return { id, title: title + ' - ' + primary_artist.name, url};
     });
     return results;
   } catch (e) {
     throw e;
   }
+}
 
+const removeAccentFromString = (string) => {
+  return string.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 }

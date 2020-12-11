@@ -4,8 +4,8 @@
   "description": "A cli to scrape a punchline from Genius",
   "main": "src/index.js",
   "bin": {
-    "@gilren/punch-cli": "bin/punch-cli",
-    "punch-cli": "bin/punch-cli"
+    "@gilren/punch": "bin/punch-cli",
+    "punch": "bin/punch-cli"
   },
   "publishConfig": {
     "access": "public"

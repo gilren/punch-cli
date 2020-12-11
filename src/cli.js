@@ -1,40 +1,25 @@
-import arg from 'arg';
 import inquirer from 'inquirer';
 import {
   findSong,
-  getLyrics
+  getPunch
 } from './main';
 
-
 const parseArgumentsIntoOptions = (rawArgs) => {
-  // paramter to omit title
-  const args = arg({
-    '--json': Boolean,
-    '--j': '--json',
-  }, {
-    argv: rawArgs.slice(2)
-  });
+  const args = rawArgs.slice(2);
 
   return {
-    json: args['--json'] || false,
-    artist: args._[0],
-    title: args._[1]
+    artist: args[0],
+    query: args[1]
   };
 };
 
-
-const promptForConfirmation = async (options, searchResults) => {
-  const defaultTemplate = 'Javascript';
-  if (options.skipPrompts) {
-    return {
-      ...options,
-      template: options.template || defaultTemplate,
-    };
-  }
-
+const promptForConfirmation = async (options, results) => {
   const questions = [];
 
-
+  const searchResults = results.map((el, index) => {
+    return index + ' | ' + el.title
+  })
+  
   questions.push({
     type: 'list',
     name: 'song',
@@ -44,36 +29,30 @@ const promptForConfirmation = async (options, searchResults) => {
     loop: false,
   })
 
+  const answers = await inquirer.prompt(questions)
 
-  questions.push({
-    type: 'input',
-    name: 'string',
-    message: 'String to search'
-  })
-
-
-  const answers = await inquirer.prompt(questions);
   return {
     ...options,
     song: answers.song,
-    query: answers.string
+    query: options.query,
+    url: results[answers.song.substring(0, 1)].url
   };
 }
 
 export async function cli(args) {
   let options = parseArgumentsIntoOptions(args);
-
+  const results = await findSong(options.artist, options.query);
+  if (!results)  {
+    console.log('Nothing Found')
+    return;
+  }
   (async () => {
-    const results = await findSong(options.artist, options.title)
-    const searchResults = results.map((el) => {
-      return el.title
-    })
-    const aze = await promptForConfirmation(options, searchResults);
-    await getLyrics(options);
+    const confirmedSong = await promptForConfirmation(options, results)
 
-    console.log(aze)
-
+    try {
+      console.log(await getPunch(confirmedSong));
+    } catch (e) {
+      throw e
+    }
   })()
-
-
 }
