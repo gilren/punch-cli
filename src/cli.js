@@ -1,23 +1,29 @@
 import arg from 'arg';
 import inquirer from 'inquirer';
-import { findSong, getLyrics } from './main';
+import {
+  findSong,
+  getLyrics
+} from './main';
 
 
 const parseArgumentsIntoOptions = (rawArgs) => {
-  const args = arg(
-    {
-      '--json' : Boolean,
-      '--j' : '--json',
-    }, {
-      argv: rawArgs.slice(2)
-    }
-    );
-    return {
-      json: args['--json'] || false
-    }
+  // paramter to omit title
+  const args = arg({
+    '--json': Boolean,
+    '--j': '--json',
+  }, {
+    argv: rawArgs.slice(2)
+  });
+
+  return {
+    json: args['--json'] || false,
+    artist: args._[0],
+    title: args._[1]
+  };
 };
 
-const promptForMissingOptions = async (options, test) => {
+
+const promptForConfirmation = async (options, searchResults) => {
   const defaultTemplate = 'Javascript';
   if (options.skipPrompts) {
     return {
@@ -28,26 +34,29 @@ const promptForMissingOptions = async (options, test) => {
 
   const questions = [];
 
-  try {
-    questions.push({
-      type: 'list',
-      name: 'song',
-      message: 'Please confirm the right song',
-      choices: test,
-      default: false,
-    })
-  } catch (e) {
-    throw e
-  }
-    
-  
+
+  questions.push({
+    type: 'list',
+    name: 'song',
+    message: 'Choose',
+    choices: searchResults,
+    default: false,
+    loop: false,
+  })
+
+
+  questions.push({
+    type: 'input',
+    name: 'string',
+    message: 'String to search'
+  })
 
 
   const answers = await inquirer.prompt(questions);
   return {
     ...options,
-    song: answers.song
-
+    song: answers.song,
+    query: answers.string
   };
 }
 
@@ -55,18 +64,16 @@ export async function cli(args) {
   let options = parseArgumentsIntoOptions(args);
 
   (async () => {
-    let results = await findSong('alpha wann', 'prada')
-    const test = await getLyrics(options);
-    results = results.map((el) => {
-      console.log(el.title)
-        return el.title
+    const results = await findSong(options.artist, options.title)
+    const searchResults = results.map((el) => {
+      return el.title
     })
-    promptForMissingOptions(options, results);
-  
+    const aze = await promptForConfirmation(options, searchResults);
+    await getLyrics(options);
+
+    console.log(aze)
+
   })()
-  
+
 
 }
-
-
-
