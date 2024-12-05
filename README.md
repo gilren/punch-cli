@@ -15,7 +15,7 @@ Copy env.exemple to .env with your credentials from Genius API
 Link package
 
 ```console
-$ npm-link
+$ npm link
 ```
 
 Launch the command
@@ -23,3 +23,5 @@ Launch the command
 ```console
 $ punch [artist|artist + song] [word|phrase]
 ```
+
+![Showcase of the cli results](src/preview.gif)
